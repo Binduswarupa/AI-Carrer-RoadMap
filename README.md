@@ -1,4 +1,3 @@
-# AI-Carrer-RoadMap
 # AI Career Roadmap Generator
 
 ## 🚀 Overview
