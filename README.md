@@ -162,7 +162,7 @@ Career Roadmap & Recommendations
 
 ## 👩‍💻 Author
 
-**Bindu Swaroopa**
+**Bindu Swarupa**
 B.Tech – Artificial Intelligence & Data Science
 
 AI Career Roadmap Generator – Built using Generative AI and Vibe Coding Methodologies.
