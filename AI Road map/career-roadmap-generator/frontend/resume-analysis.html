@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resume Analysis | AI Career Roadmap</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/dashboard.css">
+    <style>
+        .analysis-results {
+            display: none;
+        }
+        .analysis-results.active {
+            display: block;
+        }
+        .score-circle {
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            background: var(--dark-surface);
+            border: 4px solid var(--primary);
+            margin: 0 auto 24px;
+            box-shadow: 0 0 30px var(--primary-light);
+        }
+        .score-circle h2 {
+            font-size: 2.5rem;
+            margin: 0;
+            background: var(--gradient-primary);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .score-circle p {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            margin: 0;
+        }
+        .keyword-box {
+            background: var(--dark-surface);
+            padding: 16px;
+            border-radius: var(--radius-md);
+            margin-bottom: 16px;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar" style="padding: 12px 0;">
+        <div class="container" style="max-width: 100%; padding: 0 24px;">
+            <div style="display: flex; align-items: center; gap: 16px;">
+                <a href="dashboard.html" class="nav-brand">
+                    <div class="nav-brand-icon"><i class="fa-solid fa-route"></i></div>
+                    AI Roadmap
+                </a>
+            </div>
+            <div class="nav-actions">
+                <a href="dashboard.html" class="btn btn-secondary btn-sm">Back to Dashboard</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="dashboard-layout">
+        <main class="main-content" style="margin-left: 0; max-width: 1000px; margin: 0 auto;">
+            <div class="page-header slide-up">
+                <div>
+                    <h1>Resume Analysis</h1>
+                    <p>Upload your resume to extract skills and get ATS feedback.</p>
+                </div>
+            </div>
+
+            <div id="uploadSection" class="panel slide-up stagger-1">
+                <div class="upload-area" id="dropZone">
+                    <input type="file" id="resumeFile" accept=".pdf" style="display: none;">
+                    <i class="fa-solid fa-cloud-arrow-up upload-icon"></i>
+                    <h3 class="upload-text">Click to upload or drag and drop</h3>
+                    <p class="upload-hint">PDF files only (Max 16MB)</p>
+                </div>
+                <div style="text-align: center; margin-top: 24px;">
+                    <button class="btn btn-primary" id="analyzeBtn" disabled>
+                        Analyze Resume <i class="fa-solid fa-wand-magic-sparkles"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div id="analysisResults" class="analysis-results slide-up stagger-2">
+                <div class="panel">
+                    <div style="text-align: center;">
+                        <div class="score-circle">
+                            <h2 id="atsScore">0</h2>
+                            <p>ATS Score</p>
+                        </div>
+                        <h3 id="resumeSummary" style="font-weight: 500; color: var(--text-secondary); max-width: 700px; margin: 0 auto 32px;"></h3>
+                    </div>
+
+                    <div class="dashboard-grid">
+                        <div>
+                            <h3 style="margin-bottom: 16px;"><i class="fa-solid fa-code text-primary"></i> Technical Skills</h3>
+                            <div class="tag-container" id="techSkillsTags"></div>
+                        </div>
+                        <div>
+                            <h3 style="margin-bottom: 16px;"><i class="fa-solid fa-users text-success"></i> Soft Skills</h3>
+                            <div class="tag-container" id="softSkillsTags"></div>
+                        </div>
+                    </div>
+
+                    <div style="margin-top: 32px;">
+                        <h3 style="margin-bottom: 16px;"><i class="fa-solid fa-lightbulb text-warning"></i> AI Recommendations</h3>
+                        <ul id="recommendationsList" style="padding-left: 20px; line-height: 1.8; color: var(--text-secondary);"></ul>
+                    </div>
+                </div>
+                
+                <div style="text-align: center; margin-top: 24px;">
+                    <a href="roadmap.html" class="btn btn-success btn-lg">
+                        Generate Career Roadmap <i class="fa-solid fa-arrow-right"></i>
+                    </a>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Toast Container -->
+    <div id="toastContainer" class="toast-container"></div>
+
+    <script src="js/auth.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            await Auth.verifyToken();
+            loadExistingAnalysis();
+
+            const dropZone = document.getElementById('dropZone');
+            const fileInput = document.getElementById('resumeFile');
+            const analyzeBtn = document.getElementById('analyzeBtn');
+
+            dropZone.addEventListener('click', () => fileInput.click());
+
+            dropZone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                dropZone.classList.add('dragover');
+            });
+
+            dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+
+            dropZone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                dropZone.classList.remove('dragover');
+                if (e.dataTransfer.files.length) {
+                    fileInput.files = e.dataTransfer.files;
+                    handleFileSelect();
+                }
+            });
+
+            fileInput.addEventListener('change', handleFileSelect);
+
+            function handleFileSelect() {
+                if (fileInput.files.length > 0) {
+                    const file = fileInput.files[0];
+                    if (file.type !== 'application/pdf') {
+                        UI.showToast('Please upload a PDF file', 'error');
+                        fileInput.value = '';
+                        analyzeBtn.disabled = true;
+                        return;
+                    }
+                    dropZone.innerHTML = `
+                        <i class="fa-solid fa-file-pdf upload-icon" style="color: var(--danger);"></i>
+                        <h3 class="upload-text">${file.name}</h3>
+                        <p class="upload-hint">Ready to analyze (${(file.size / 1024 / 1024).toFixed(2)} MB)</p>
+                    `;
+                    analyzeBtn.disabled = false;
+                }
+            }
+
+            analyzeBtn.addEventListener('click', async () => {
+                const file = fileInput.files[0];
+                if (!file) return;
+
+                UI.showLoading(true);
+
+                // 1. Upload
+                const formData = new FormData();
+                formData.append('resume', file);
+                
+                const uploadRes = await ApiService.request('/resume/upload', 'POST', formData, true);
+                
+                if (!uploadRes.success) {
+                    UI.showLoading(false);
+                    UI.showToast(uploadRes.error, 'error');
+                    return;
+                }
+
+                // 2. Analyze
+                const analyzeRes = await ApiService.request('/resume/analyze', 'POST', {});
+                
+                UI.showLoading(false);
+                
+                if (analyzeRes.success) {
+                    UI.showToast('Analysis complete!', 'success');
+                    displayAnalysis(analyzeRes.data.analysis);
+                } else {
+                    UI.showToast(analyzeRes.error, 'error');
+                }
+            });
+        });
+
+        async function loadExistingAnalysis() {
+            UI.showLoading(true);
+            const res = await ApiService.request('/resume/analysis');
+            UI.showLoading(false);
+            
+            if (res.success && res.data.resume.analysis) {
+                displayAnalysis(res.data.resume.analysis);
+            }
+        }
+
+        function displayAnalysis(analysis) {
+            document.getElementById('uploadSection').style.display = 'none';
+            document.getElementById('analysisResults').classList.add('active');
+            
+            document.getElementById('atsScore').textContent = analysis.ats_score || 0;
+            document.getElementById('resumeSummary').textContent = analysis.summary || '';
+            
+            // Tech skills
+            const techContainer = document.getElementById('techSkillsTags');
+            techContainer.innerHTML = '';
+            if (analysis.skills && analysis.skills.technical) {
+                analysis.skills.technical.forEach(skill => {
+                    techContainer.innerHTML += `<span class="tag primary">${skill}</span>`;
+                });
+            }
+            if (analysis.skills && analysis.skills.tools) {
+                analysis.skills.tools.forEach(tool => {
+                    techContainer.innerHTML += `<span class="tag">${tool}</span>`;
+                });
+            }
+            
+            // Soft skills
+            const softContainer = document.getElementById('softSkillsTags');
+            softContainer.innerHTML = '';
+            if (analysis.skills && analysis.skills.soft) {
+                analysis.skills.soft.forEach(skill => {
+                    softContainer.innerHTML += `<span class="tag success">${skill}</span>`;
+                });
+            }
+            
+            // Recs
+            const recsList = document.getElementById('recommendationsList');
+            recsList.innerHTML = '';
+            if (analysis.recommendations) {
+                analysis.recommendations.forEach(rec => {
+                    recsList.innerHTML += `<li>${rec}</li>`;
+                });
+            }
+        }
+    </script>
+</body>
+</html>

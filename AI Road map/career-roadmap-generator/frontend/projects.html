@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Projects | AI Career Roadmap</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/dashboard.css">
+</head>
+<body>
+    <nav class="navbar" style="padding: 12px 0;">
+        <div class="container" style="max-width: 100%; padding: 0 24px;">
+            <div style="display: flex; align-items: center; gap: 16px;">
+                <a href="dashboard.html" class="nav-brand">
+                    <div class="nav-brand-icon"><i class="fa-solid fa-route"></i></div>
+                    AI Roadmap
+                </a>
+            </div>
+            <div class="nav-actions">
+                <a href="dashboard.html" class="btn btn-secondary btn-sm">Dashboard</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="dashboard-layout">
+        <main class="main-content" style="margin-left: 0; max-width: 1200px; margin: 0 auto;">
+            <div class="page-header slide-up">
+                <div>
+                    <h1>Project Recommendations</h1>
+                    <p>Build your portfolio with AI-curated project ideas.</p>
+                </div>
+            </div>
+
+            <div class="panel slide-up stagger-1">
+                <form id="projectForm">
+                    <div class="dashboard-grid">
+                        <div class="form-group">
+                            <label class="form-label">Target Role</label>
+                            <input type="text" id="targetRole" class="form-control" required>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary" id="generateBtn">
+                        Find Projects <i class="fa-solid fa-laptop-code"></i>
+                    </button>
+                </form>
+            </div>
+
+            <div id="resultsArea" style="display: none; margin-top: 24px;" class="slide-up stagger-2">
+                <h2 style="margin-bottom: 20px;">Beginner</h2>
+                <div id="beginnerGrid" class="dashboard-grid"></div>
+                
+                <h2 style="margin: 40px 0 20px;">Intermediate</h2>
+                <div id="intermediateGrid" class="dashboard-grid"></div>
+                
+                <h2 style="margin: 40px 0 20px;">Advanced</h2>
+                <div id="advancedGrid" class="dashboard-grid"></div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Toast Container -->
+    <div id="toastContainer" class="toast-container"></div>
+
+    <script src="js/auth.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            await Auth.verifyToken();
+            loadExistingProjects();
+
+            document.getElementById('projectForm').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                
+                const targetRole = document.getElementById('targetRole').value;
+                
+                const btn = document.getElementById('generateBtn');
+                const originalText = btn.innerHTML;
+                btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Searching...';
+                btn.disabled = true;
+                
+                const payload = { target_role: targetRole, experience_level: "mixed", current_skills: "" };
+                
+                const res = await ApiService.request('/certifications/projects/recommend', 'POST', payload);
+                
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+                
+                if (res.success) {
+                    UI.showToast('Projects found!', 'success');
+                    displayProjects(res.data.projects);
+                } else {
+                    UI.showToast(res.error, 'error');
+                }
+            });
+        });
+
+        async function loadExistingProjects() {
+            UI.showLoading(true);
+            const res = await ApiService.request('/certifications/projects/list');
+            UI.showLoading(false);
+            
+            if (res.success && res.data.projects && res.data.projects.recommended_projects) {
+                document.getElementById('targetRole').value = res.data.projects.target_role || '';
+                displayProjects(res.data.projects.recommended_projects);
+            }
+        }
+
+        function displayProjects(data) {
+            document.getElementById('resultsArea').style.display = 'block';
+            
+            if (!data || !data.projects) return;
+            
+            renderGrid('beginnerGrid', data.projects.beginner);
+            renderGrid('intermediateGrid', data.projects.intermediate);
+            renderGrid('advancedGrid', data.projects.advanced);
+        }
+        
+        function renderGrid(id, projects) {
+            const grid = document.getElementById(id);
+            grid.innerHTML = '';
+            
+            if(!projects) return;
+            
+            projects.forEach(proj => {
+                const card = document.createElement('div');
+                card.className = 'panel';
+                
+                let techHtml = (proj.technologies || []).map(t => `<span class="tag">${t}</span>`).join(' ');
+                
+                card.innerHTML = `
+                    <h3 style="margin-bottom: 8px;">${proj.title}</h3>
+                    <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 16px;">${proj.description}</p>
+                    <div style="margin-bottom: 16px;">
+                        <div class="tag-container">${techHtml}</div>
+                    </div>
+                    <div style="font-size: 0.85rem; color: var(--text-muted);">
+                        <i class="fa-regular fa-clock"></i> Est. Time: ${proj.duration}
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+    </script>
+</body>
+</html>

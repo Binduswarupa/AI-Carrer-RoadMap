@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Certifications | AI Career Roadmap</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/dashboard.css">
+</head>
+<body>
+    <nav class="navbar" style="padding: 12px 0;">
+        <div class="container" style="max-width: 100%; padding: 0 24px;">
+            <div style="display: flex; align-items: center; gap: 16px;">
+                <a href="dashboard.html" class="nav-brand">
+                    <div class="nav-brand-icon"><i class="fa-solid fa-route"></i></div>
+                    AI Roadmap
+                </a>
+            </div>
+            <div class="nav-actions">
+                <a href="dashboard.html" class="btn btn-secondary btn-sm">Dashboard</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="dashboard-layout">
+        <main class="main-content" style="margin-left: 0; max-width: 1200px; margin: 0 auto;">
+            <div class="page-header slide-up">
+                <div>
+                    <h1>Certifications</h1>
+                    <p>AI-recommended certifications to boost your credentials.</p>
+                </div>
+            </div>
+
+            <div id="generatorForm" class="panel slide-up stagger-1">
+                <form id="certForm">
+                    <div class="dashboard-grid">
+                        <div class="form-group">
+                            <label class="form-label">Target Role</label>
+                            <input type="text" id="targetRole" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Budget</label>
+                            <select id="budget" class="form-control">
+                                <option value="free">Free Only</option>
+                                <option value="low">Low Budget (under $100)</option>
+                                <option value="moderate" selected>Moderate ($100 - $300)</option>
+                                <option value="high">High Budget / Employer Paid</option>
+                            </select>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary" id="generateBtn">
+                        Find Certifications <i class="fa-solid fa-award"></i>
+                    </button>
+                </form>
+            </div>
+
+            <div id="resultsGrid" class="dashboard-grid slide-up stagger-2" style="display: none; margin-top: 24px;">
+                <!-- Cards here -->
+            </div>
+        </main>
+    </div>
+
+    <!-- Toast Container -->
+    <div id="toastContainer" class="toast-container"></div>
+
+    <script src="js/auth.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            await Auth.verifyToken();
+            loadExistingCerts();
+
+            document.getElementById('certForm').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                
+                const targetRole = document.getElementById('targetRole').value;
+                const budget = document.getElementById('budget').value;
+                
+                const btn = document.getElementById('generateBtn');
+                const originalText = btn.innerHTML;
+                btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Searching...';
+                btn.disabled = true;
+                
+                const payload = { target_role: targetRole, budget: budget, current_skills: "" };
+                
+                const res = await ApiService.request('/certifications/recommend', 'POST', payload);
+                
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+                
+                if (res.success) {
+                    UI.showToast('Recommendations found!', 'success');
+                    displayCerts(res.data.certifications);
+                } else {
+                    UI.showToast(res.error, 'error');
+                }
+            });
+        });
+
+        async function loadExistingCerts() {
+            UI.showLoading(true);
+            const res = await ApiService.request('/certifications/list');
+            UI.showLoading(false);
+            
+            if (res.success && res.data.certifications && res.data.certifications.recommended_certs) {
+                document.getElementById('targetRole').value = res.data.certifications.target_role || '';
+                displayCerts(res.data.certifications.recommended_certs);
+            }
+        }
+
+        function displayCerts(data) {
+            const grid = document.getElementById('resultsGrid');
+            grid.innerHTML = '';
+            grid.style.display = 'grid';
+            
+            if (!data || !data.certifications) return;
+            
+            data.certifications.forEach(cert => {
+                const card = document.createElement('div');
+                card.className = 'panel stat-card';
+                card.style.flexDirection = 'column';
+                card.style.alignItems = 'flex-start';
+                
+                card.innerHTML = `
+                    <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
+                        <div class="stat-icon primary" style="width: 48px; height: 48px; font-size: 1.2rem;"><i class="fa-solid fa-certificate"></i></div>
+                        <div>
+                            <h3 style="font-size: 1.1rem; font-weight: 600;">${cert.name}</h3>
+                            <p style="color: var(--text-secondary); font-size: 0.85rem;">${cert.provider}</p>
+                        </div>
+                    </div>
+                    <div style="width: 100%; margin-bottom: 16px;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 0.9rem;">
+                            <span style="color: var(--text-muted);">Difficulty</span>
+                            <span style="font-weight: 500;">${cert.difficulty}</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 0.9rem;">
+                            <span style="color: var(--text-muted);">Cost</span>
+                            <span style="font-weight: 500; color: var(--success);">${cert.cost}</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 0.9rem;">
+                            <span style="color: var(--text-muted);">Duration</span>
+                            <span style="font-weight: 500;">${cert.duration}</span>
+                        </div>
+                    </div>
+                    <a href="${cert.url || '#'}" target="_blank" class="btn btn-secondary btn-sm" style="width: 100%;">View Details</a>
+                `;
+                grid.appendChild(card);
+            });
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard | AI Career Roadmap</title>
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/dashboard.css">
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar" style="padding: 12px 0;">
+        <div class="container" style="max-width: 100%; padding: 0 24px;">
+            <div style="display: flex; align-items: center; gap: 16px;">
+                <button class="mobile-menu-btn d-lg-none" id="sidebarToggle" style="display: none;">
+                    <i class="fa-solid fa-bars"></i>
+                </button>
+                <a href="dashboard.html" class="nav-brand">
+                    <div class="nav-brand-icon"><i class="fa-solid fa-route"></i></div>
+                    AI Roadmap
+                </a>
+            </div>
+            
+            <div class="nav-actions">
+                <span id="userNameDisplay" style="font-weight: 500; margin-right: 12px;"></span>
+                <button class="btn btn-secondary btn-sm" onclick="Auth.logout()">
+                    <i class="fa-solid fa-right-from-bracket"></i> Logout
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="dashboard-layout">
+        <!-- Sidebar -->
+        <div class="sidebar-overlay" id="sidebarOverlay"></div>
+        <aside class="sidebar" id="sidebar">
+            <nav class="sidebar-nav">
+                <div class="sidebar-heading">Menu</div>
+                <a href="dashboard.html" class="sidebar-link active">
+                    <i class="fa-solid fa-house"></i> Overview
+                </a>
+                <a href="resume-analysis.html" class="sidebar-link">
+                    <i class="fa-solid fa-file-pdf"></i> Resume Analysis
+                </a>
+                <a href="roadmap.html" class="sidebar-link">
+                    <i class="fa-solid fa-map"></i> Career Roadmap
+                </a>
+                <a href="certifications.html" class="sidebar-link">
+                    <i class="fa-solid fa-certificate"></i> Certifications
+                </a>
+                <a href="projects.html" class="sidebar-link">
+                    <i class="fa-solid fa-laptop-code"></i> Projects
+                </a>
+                
+                <div class="sidebar-heading">Settings</div>
+                <a href="#" class="sidebar-link" id="themeToggleSidebar">
+                    <i class="fa-solid fa-moon"></i> Toggle Theme
+                </a>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="page-header slide-up">
+                <div>
+                    <h1 id="welcomeMessage">Welcome back, User!</h1>
+                    <p>Here's an overview of your career progress.</p>
+                </div>
+                <a href="resume-analysis.html" class="btn btn-primary">
+                    <i class="fa-solid fa-upload"></i> Upload Resume
+                </a>
+            </div>
+
+            <div class="dashboard-grid slide-up stagger-1">
+                <div class="panel stat-card">
+                    <div class="stat-icon primary"><i class="fa-solid fa-star"></i></div>
+                    <div class="stat-info">
+                        <h3>ATS Resume Score</h3>
+                        <div class="value" id="atsScoreDisplay">--</div>
+                    </div>
+                </div>
+                <div class="panel stat-card">
+                    <div class="stat-icon success"><i class="fa-solid fa-bullseye"></i></div>
+                    <div class="stat-info">
+                        <h3>Employability Score</h3>
+                        <div class="value" id="employabilityScoreDisplay">--</div>
+                    </div>
+                </div>
+                <div class="panel stat-card">
+                    <div class="stat-icon warning"><i class="fa-solid fa-fire"></i></div>
+                    <div class="stat-info">
+                        <h3>Skills Verified</h3>
+                        <div class="value" id="skillsCountDisplay">0</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="dashboard-grid slide-up stagger-2" style="grid-template-columns: 2fr 1fr;">
+                <div class="panel">
+                    <div class="panel-header">
+                        <h2 class="panel-title"><i class="fa-solid fa-chart-radar"></i> Skill Analysis Radar</h2>
+                    </div>
+                    <div class="chart-container" style="display: flex; justify-content: center;">
+                        <canvas id="skillsRadarChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="panel">
+                    <div class="panel-header">
+                        <h2 class="panel-title"><i class="fa-solid fa-bolt"></i> Quick Actions</h2>
+                    </div>
+                    <div class="action-list">
+                        <a href="roadmap.html" class="action-item">
+                            <div class="action-info">
+                                <div class="action-icon"><i class="fa-solid fa-map-location-dot"></i></div>
+                                <div class="action-text">
+                                    <h4>Generate Roadmap</h4>
+                                    <p>Plan your next 6 months</p>
+                                </div>
+                            </div>
+                            <i class="fa-solid fa-chevron-right text-muted"></i>
+                        </a>
+                        <a href="certifications.html" class="action-item">
+                            <div class="action-info">
+                                <div class="action-icon"><i class="fa-solid fa-award"></i></div>
+                                <div class="action-text">
+                                    <h4>Find Certifications</h4>
+                                    <p>Boost your credentials</p>
+                                </div>
+                            </div>
+                            <i class="fa-solid fa-chevron-right text-muted"></i>
+                        </a>
+                        <a href="projects.html" class="action-item">
+                            <div class="action-info">
+                                <div class="action-icon"><i class="fa-solid fa-code"></i></div>
+                                <div class="action-text">
+                                    <h4>Project Ideas</h4>
+                                    <p>Build your portfolio</p>
+                                </div>
+                            </div>
+                            <i class="fa-solid fa-chevron-right text-muted"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- AI Mentor Chat Widget -->
+    <div class="chat-widget">
+        <button class="chat-toggle" id="chatToggleBtn">
+            <i class="fa-solid fa-robot"></i>
+        </button>
+        <div class="chat-panel" id="chatPanel">
+            <div class="chat-header">
+                <div class="chat-title">
+                    <i class="fa-solid fa-robot"></i> AI Career Mentor
+                </div>
+                <button class="chat-close" id="chatCloseBtn"><i class="fa-solid fa-times"></i></button>
+            </div>
+            <div class="chat-messages" id="chatMessages">
+                <div class="message ai">
+                    Hi! I'm your AI Career Mentor. I can help you with interview prep, resume advice, or answer questions about your tech career. How can I help today?
+                </div>
+            </div>
+            <div class="chat-input">
+                <input type="text" id="chatInput" placeholder="Ask for career advice...">
+                <button class="chat-send" id="chatSendBtn"><i class="fa-solid fa-paper-plane"></i></button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div id="toastContainer" class="toast-container"></div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/dashboard.js"></script>
+</body>
+</html>

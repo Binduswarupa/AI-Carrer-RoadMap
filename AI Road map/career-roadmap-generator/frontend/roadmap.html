@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Career Roadmap | AI Career Roadmap</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/dashboard.css">
+</head>
+<body>
+    <nav class="navbar" style="padding: 12px 0;">
+        <div class="container" style="max-width: 100%; padding: 0 24px;">
+            <div style="display: flex; align-items: center; gap: 16px;">
+                <a href="dashboard.html" class="nav-brand">
+                    <div class="nav-brand-icon"><i class="fa-solid fa-route"></i></div>
+                    AI Roadmap
+                </a>
+            </div>
+            <div class="nav-actions">
+                <a href="dashboard.html" class="btn btn-secondary btn-sm">Dashboard</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="dashboard-layout">
+        <main class="main-content" style="margin-left: 0; max-width: 1200px; margin: 0 auto;">
+            <div class="page-header slide-up">
+                <div>
+                    <h1>Career Roadmap</h1>
+                    <p>Your personalized step-by-step plan to reach your target role.</p>
+                </div>
+            </div>
+
+            <div id="generatorForm" class="panel slide-up stagger-1">
+                <form id="roadmapForm">
+                    <div class="dashboard-grid">
+                        <div class="form-group">
+                            <label class="form-label">Target Role</label>
+                            <input type="text" id="targetRole" class="form-control" placeholder="e.g. Senior React Developer" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Current Experience Level</label>
+                            <select id="experienceLevel" class="form-control">
+                                <option value="beginner">Beginner (0-1 years)</option>
+                                <option value="intermediate">Intermediate (2-4 years)</option>
+                                <option value="advanced">Advanced (5+ years)</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Current Key Skills (Comma separated)</label>
+                        <input type="text" id="currentSkills" class="form-control" placeholder="e.g. HTML, CSS, JavaScript basics">
+                    </div>
+                    <button type="submit" class="btn btn-primary" id="generateBtn">
+                        Generate Timeline <i class="fa-solid fa-wand-magic-sparkles"></i>
+                    </button>
+                </form>
+            </div>
+
+            <div id="roadmapResults" style="display: none;" class="slide-up stagger-2">
+                <div class="timeline" id="timelineContainer">
+                    <!-- Timeline items will be generated here -->
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Toast Container -->
+    <div id="toastContainer" class="toast-container"></div>
+
+    <script src="js/auth.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            await Auth.verifyToken();
+            loadExistingRoadmap();
+
+            document.getElementById('roadmapForm').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                
+                const targetRole = document.getElementById('targetRole').value;
+                const experienceLevel = document.getElementById('experienceLevel').value;
+                const currentSkills = document.getElementById('currentSkills').value;
+                
+                const btn = document.getElementById('generateBtn');
+                const originalText = btn.innerHTML;
+                btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Generating...';
+                btn.disabled = true;
+                
+                const payload = { target_role: targetRole, experience_level: experienceLevel, current_skills: currentSkills, timeline: "6 months" };
+                
+                const res = await ApiService.request('/roadmap/generate', 'POST', payload);
+                
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+                
+                if (res.success) {
+                    UI.showToast('Roadmap generated successfully!', 'success');
+                    displayRoadmap(res.data.roadmap);
+                } else {
+                    UI.showToast(res.error, 'error');
+                }
+            });
+        });
+
+        async function loadExistingRoadmap() {
+            UI.showLoading(true);
+            const res = await ApiService.request('/roadmap/list');
+            UI.showLoading(false);
+            
+            if (res.success && res.data.roadmaps && res.data.roadmaps.length > 0) {
+                // Show most recent
+                const latest = res.data.roadmaps[0];
+                document.getElementById('targetRole').value = latest.target_role;
+                document.getElementById('experienceLevel').value = latest.experience_level || 'beginner';
+                document.getElementById('currentSkills').value = latest.current_skills || '';
+                
+                if (latest.roadmap) {
+                    displayRoadmap(latest.roadmap);
+                }
+            }
+        }
+
+        function displayRoadmap(roadmapData) {
+            document.getElementById('generatorForm').style.display = 'none';
+            document.getElementById('roadmapResults').style.display = 'block';
+            
+            const container = document.getElementById('timelineContainer');
+            container.innerHTML = '';
+            
+            if (!roadmapData || !roadmapData.roadmap) return;
+            
+            roadmapData.roadmap.forEach((monthData) => {
+                const item = document.createElement('div');
+                item.className = 'timeline-item';
+                
+                let skillsHtml = '';
+                if (monthData.skills_to_learn) {
+                    skillsHtml = monthData.skills_to_learn.map(s => `<span class="tag primary">${s.skill || s}</span>`).join(' ');
+                }
+                
+                let projectsHtml = '';
+                if (monthData.mini_projects) {
+                    projectsHtml = monthData.mini_projects.map(p => `<li>${p.title || p}</li>`).join('');
+                }
+                
+                item.innerHTML = `
+                    <div class="timeline-marker"><i class="fa-solid fa-calendar"></i></div>
+                    <div class="timeline-content">
+                        <div class="timeline-header">
+                            <div>
+                                <div class="timeline-month">Month ${monthData.month}</div>
+                                <h3 class="timeline-title">${monthData.title || monthData.focus_area || 'Focus Area'}</h3>
+                            </div>
+                        </div>
+                        <div style="margin-bottom: 16px;">
+                            <h4 style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 8px;">Skills to Learn</h4>
+                            <div class="tag-container">${skillsHtml}</div>
+                        </div>
+                        ${projectsHtml ? `
+                        <div>
+                            <h4 style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 8px;">Mini Projects</h4>
+                            <ul style="padding-left: 20px; color: var(--text-muted); font-size: 0.9rem;">${projectsHtml}</ul>
+                        </div>` : ''}
+                    </div>
+                `;
+                
+                container.appendChild(item);
+            });
+            
+            // Re-show form toggle
+            const toggleBtn = document.createElement('button');
+            toggleBtn.className = 'btn btn-secondary';
+            toggleBtn.style.marginTop = '24px';
+            toggleBtn.innerHTML = '<i class="fa-solid fa-rotate-right"></i> Generate New Roadmap';
+            toggleBtn.onclick = () => {
+                document.getElementById('generatorForm').style.display = 'block';
+                document.getElementById('roadmapResults').style.display = 'none';
+            };
+            container.appendChild(toggleBtn);
+        }
+    </script>
+</body>
+</html>
